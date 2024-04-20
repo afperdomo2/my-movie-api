@@ -7,6 +7,9 @@ python -m venv venv
 # Activar el entorno virtual (windows)
 venv/Scripts/activate
 
+# Salir del entorno virtual
+deactivate
+
 # Instalar módulos en el entorno virtual
 pip install fastapi
 pip install uvicorn
