@@ -1,6 +1,6 @@
 from typing import Optional
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Path, Query
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
 
@@ -14,6 +14,7 @@ class Movie(BaseModel):
     title: str = Field(min_length=3)
     category: str = Field(min_length=3)
     year: int = Field(ge=1900)
+    rating: float = Field(ge=1, le=10)
 
     class Config:
         json_schema_extra = {
@@ -22,6 +23,7 @@ class Movie(BaseModel):
                 "title": "The Shawshank Redemption",
                 "category": "Drama",
                 "year": 1994,
+                "rating": 9.3,
             }
         }
 
@@ -47,18 +49,14 @@ def get_movies():
 
 
 @app.get("/movies/{id}", tags=["Movies"])
-def get_movie(id: int):
+def get_movie(id: int = Path(ge=1)):
     movie = next((movie for movie in movies if movie["id"] == id), None)
     return {"movie": movie}
 
 
 @app.get("/movies/", tags=["Movies"])
-def filter_movies(category: str = None, year: int = None):
-    movies_filtered = []
-    if category:
-        movies_filtered = [movie for movie in movies if movie["category"] == category]
-    if year:
-        movies_filtered = [movie for movie in movies if movie["year"] == year]
+def get_movies_by_category(category: str = Query(min_length=3)):
+    movies_filtered = [movie for movie in movies if movie["category"] == category]
     return {"movies": movies_filtered}
 
 
