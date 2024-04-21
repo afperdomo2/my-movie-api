@@ -47,3 +47,25 @@ def create_movie(title: str = Body(), category: str = Body(), year: int = Body()
     new_movie = {"id": movie_id, "title": title, "category": category, "year": year}
     movies.append(new_movie)
     return {"movie": new_movie}
+
+
+@app.put("/movies/{movie_id}", tags=["Movies"])
+def update_movie(
+    movie_id: int, title: str = Body(), category: str = Body(), year: int = Body()
+):
+    movie = next((movie for movie in movies if movie["id"] == movie_id), None)
+    if not movie:
+        return {"error": "Movie not found"}
+    movie["title"] = title
+    movie["category"] = category
+    movie["year"] = year
+    return {"movie": movie}
+
+
+@app.delete("/movies/{movie_id}", tags=["Movies"])
+def delete_movie(movie_id: int):
+    movie = next((movie for movie in movies if movie["id"] == movie_id), None)
+    if not movie:
+        return {"error": "Movie not found"}
+    movies.remove(movie)
+    return {"movie": movie}
