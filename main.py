@@ -1,7 +1,7 @@
-from typing import Optional
+from typing import List, Optional
 
 from fastapi import FastAPI, Path, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 app = FastAPI()
@@ -29,12 +29,42 @@ class Movie(BaseModel):
 
 
 movies = [
-    {"id": 1, "title": "The Shawshank Redemption", "category": "Drama", "year": 1994},
-    {"id": 2, "title": "The Godfather", "category": "Crime", "year": 1972},
-    {"id": 3, "title": "The Dark Knight", "category": "Action", "year": 2008},
-    {"id": 4, "title": "Pulp Fiction", "category": "Crime", "year": 1994},
-    {"id": 5, "title": "Forrest Gump", "category": "Drama", "year": 1994},
-    {"id": 6, "title": "Inception", "category": "Action", "year": 2010},
+    {
+        "id": 1,
+        "title": "The Shawshank Redemption",
+        "category": "Drama",
+        "year": 1994,
+        "rating": 9.3,
+    },
+    {
+        "id": 2,
+        "title": "The Godfather",
+        "category": "Crime",
+        "year": 1972,
+        "rating": 9.2,
+    },
+    {
+        "id": 3,
+        "title": "The Dark Knight",
+        "category": "Action",
+        "year": 2008,
+        "rating": 9.0,
+    },
+    {
+        "id": 4,
+        "title": "Pulp Fiction",
+        "category": "Crime",
+        "year": 1994,
+        "rating": 8.9,
+    },
+    {
+        "id": 5,
+        "title": "Forrest Gump",
+        "category": "Drama",
+        "year": 1994,
+        "rating": 8.8,
+    },
+    {"id": 6, "title": "Inception", "category": "Action", "year": 2010, "rating": 8.7},
 ]
 
 
@@ -43,44 +73,54 @@ def message():
     return HTMLResponse(content="<h1>Welcome to My Movie API</h1>", status_code=200)
 
 
-@app.get("/movies", tags=["Movies"])
-def get_movies():
-    return {"movies": movies}
+@app.get("/movies", tags=["Movies"], response_model=List[Movie])
+def get_movies() -> List[Movie]:
+    return JSONResponse(content={"data": movies})
 
 
-@app.get("/movies/{id}", tags=["Movies"])
-def get_movie(id: int = Path(ge=1)):
-    movie = next((movie for movie in movies if movie["id"] == id), None)
-    return {"movie": movie}
-
-
-@app.get("/movies/", tags=["Movies"])
-def get_movies_by_category(category: str = Query(min_length=3)):
-    movies_filtered = [movie for movie in movies if movie["category"] == category]
-    return {"movies": movies_filtered}
-
-
-@app.post("/movies", tags=["Movies"])
-def create_movie(movie: Movie):
-    movies.append(movie)
-    return {"movie": movie}
-
-
-@app.put("/movies/{id}", tags=["Movies"])
-def update_movie(id: int, movie: Movie):
+@app.get("/movies/{id}", tags=["Movies"], response_model=Movie)
+def get_movie(id: int = Path(ge=1)) -> Movie:
     movie = next((movie for movie in movies if movie["id"] == id), None)
     if not movie:
-        return {"error": "Movie not found"}
-    movie["title"] = movie.title
-    movie["category"] = movie.category
-    movie["year"] = movie.year
-    return {"movie": movie}
+        return JSONResponse(content={"error": "Movie not found"}, status_code=404)
+    return JSONResponse(content={"data": movie})
 
 
-@app.delete("/movies/{id}", tags=["Movies"])
-def delete_movie(id: int):
+@app.get("/movies/", tags=["Movies"], response_model=List[Movie])
+def get_movies_by_category(category: str = Query(min_length=3)) -> List[Movie]:
+    filtered = next([movie for movie in movies if movie["category"] == category], None)
+    return JSONResponse(content={"data": filtered})
+
+
+@app.post("/movies", tags=["Movies"], response_model=dict)
+def create_movie(movie: Movie) -> dict:
+    movies.append(movie.model_dump())
+    return JSONResponse(
+        content={"message": "Movie created", "data": dict(movie)}, status_code=201
+    )
+
+
+@app.put("/movies/{id}", tags=["Movies"], response_model=dict)
+def update_movie(
+    id: int,
+    movie_update: Movie,
+) -> dict:
+    movie_dict = next((movie for movie in movies if movie["id"] == id), None)
+    if not movie_dict:
+        return JSONResponse(content={"error": "Movie not found"}, status_code=404)
+    movie_dict["title"] = movie_update.title
+    movie_dict["category"] = movie_update.category
+    movie_dict["year"] = movie_update.year
+    movie_dict["rating"] = movie_update.rating
+    return JSONResponse(
+        content={"message": "Movie updated", "data": movie_dict},
+    )
+
+
+@app.delete("/movies/{id}", tags=["Movies"], response_model=dict)
+def delete_movie(id: int) -> dict:
     movie = next((movie for movie in movies if movie["id"] == id), None)
     if not movie:
-        return {"error": "Movie not found"}
+        return JSONResponse(content={"error": "Movie not found"}, status_code=404)
     movies.remove(movie)
-    return {"movie": movie}
+    return JSONResponse(content={"message": "Movie deleted"})
