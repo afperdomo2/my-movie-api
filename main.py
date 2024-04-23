@@ -14,11 +14,8 @@ app.version = "0.0.1"
 
 class JWTBearer(HTTPBearer):
     async def __call__(self, request: Request):
-        print(111111111)
         auth = await super().__call__(request)
-        print(auth)
         data = validate_token(auth.credentials)
-        print("data: ", data)
         if data["sub"] != "admin@gmail.com":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
@@ -91,8 +88,6 @@ movies = [
 
 @app.post("/login", tags=["Auth"], response_model=dict)
 def login(user: User) -> dict:
-    print(user)
-    print(type(user))
     if user.email != "admin@gmail.com" or user.password != "123":
         return JSONResponse(
             content={"error": "Invalid credentials"},
