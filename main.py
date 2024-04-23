@@ -1,14 +1,28 @@
 from typing import List, Optional
 
-from fastapi import FastAPI, Path, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.security import HTTPBearer
 from pydantic import BaseModel, Field
 
-# from jwt_manager import create_token
+from jwt_manager import create_token, validate_token
 
 app = FastAPI()
 app.title = "My Movie API"
 app.version = "0.0.1"
+
+
+class JWTBearer(HTTPBearer):
+    async def __call__(self, request: Request):
+        print(111111111)
+        auth = await super().__call__(request)
+        print(auth)
+        data = validate_token(auth.credentials)
+        print("data: ", data)
+        if data["sub"] != "admin@gmail.com":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
+            )
 
 
 class User(BaseModel):
@@ -77,7 +91,15 @@ movies = [
 
 @app.post("/login", tags=["Auth"], response_model=dict)
 def login(user: User) -> dict:
-    return dict(user)
+    print(user)
+    print(type(user))
+    if user.email != "admin@gmail.com" or user.password != "123":
+        return JSONResponse(
+            content={"error": "Invalid credentials"},
+            status_code=status.HTTP_401_UNAUTHORIZED,
+        )
+    token = create_token({"sub": user.email})
+    return JSONResponse(content={"token": token})
 
 
 @app.get("/", tags=["Home"])
@@ -85,27 +107,48 @@ def message():
     return HTMLResponse(content="<h1>Welcome to My Movie API</h1>", status_code=200)
 
 
-@app.get("/movies", tags=["Movies"], response_model=List[Movie])
+@app.get(
+    "/movies",
+    tags=["Movies"],
+    response_model=List[Movie],
+    dependencies=[Depends(JWTBearer())],
+)
 def get_movies() -> List[Movie]:
     return JSONResponse(content={"data": movies})
 
 
-@app.get("/movies/{id}", tags=["Movies"], response_model=Movie)
+@app.get(
+    "/movies/{id}",
+    tags=["Movies"],
+    response_model=Movie,
+    dependencies=[Depends(JWTBearer())],
+)
 def get_movie(id: int = Path(ge=1)) -> Movie:
     movie = next((movie for movie in movies if movie["id"] == id), None)
     if not movie:
-        return JSONResponse(content={"error": "Movie not found"}, status_code=404)
+        return JSONResponse(
+            content={"error": "Movie not found"}, status_code=status.HTTP_404_NOT_FOUND
+        )
     return JSONResponse(content={"data": movie})
 
 
-@app.get("/movies/", tags=["Movies"], response_model=List[Movie])
+@app.get(
+    "/movies/",
+    tags=["Movies"],
+    response_model=List[Movie],
+    dependencies=[Depends(JWTBearer())],
+)
 def get_movies_by_category(category: str = Query(min_length=3)) -> List[Movie]:
     filtered = next([movie for movie in movies if movie["category"] == category], None)
     return JSONResponse(content={"data": filtered})
 
 
 @app.post(
-    "/movies", tags=["Movies"], response_model=dict, status_code=status.HTTP_201_CREATED
+    "/movies",
+    tags=["Movies"],
+    response_model=dict,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(JWTBearer())],
 )
 def create_movie(movie: Movie) -> dict:
     movies.append(movie.model_dump())
@@ -115,14 +158,21 @@ def create_movie(movie: Movie) -> dict:
     )
 
 
-@app.put("/movies/{id}", tags=["Movies"], response_model=dict)
+@app.put(
+    "/movies/{id}",
+    tags=["Movies"],
+    response_model=dict,
+    dependencies=[Depends(JWTBearer())],
+)
 def update_movie(
     id: int,
     movie_update: Movie,
 ) -> dict:
     movie_dict = next((movie for movie in movies if movie["id"] == id), None)
     if not movie_dict:
-        return JSONResponse(content={"error": "Movie not found"}, status_code=404)
+        return JSONResponse(
+            content={"error": "Movie not found"}, status_code=status.HTTP_404_NOT_FOUND
+        )
     movie_dict["title"] = movie_update.title
     movie_dict["category"] = movie_update.category
     movie_dict["year"] = movie_update.year
@@ -137,10 +187,13 @@ def update_movie(
     tags=["Movies"],
     response_model=None,
     status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(JWTBearer())],
 )
 def delete_movie(id: int) -> None:
     movie = next((movie for movie in movies if movie["id"] == id), None)
     if not movie:
-        return JSONResponse(content={"error": "Movie not found"}, status_code=404)
+        return JSONResponse(
+            content={"error": "Movie not found"}, status_code=status.HTTP_404_NOT_FOUND
+        )
     movies.remove(movie)
-    return JSONResponse(content=None, status_code=204)
+    return JSONResponse(content=None, status_code=status.HTTP_204_NO_CONTENT)
