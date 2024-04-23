@@ -1,6 +1,6 @@
 from typing import List, Optional
 
-from fastapi import FastAPI, Path, Query
+from fastapi import FastAPI, Path, Query, status
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
 
@@ -92,11 +92,14 @@ def get_movies_by_category(category: str = Query(min_length=3)) -> List[Movie]:
     return JSONResponse(content={"data": filtered})
 
 
-@app.post("/movies", tags=["Movies"], response_model=dict)
+@app.post(
+    "/movies", tags=["Movies"], response_model=dict, status_code=status.HTTP_201_CREATED
+)
 def create_movie(movie: Movie) -> dict:
     movies.append(movie.model_dump())
     return JSONResponse(
-        content={"message": "Movie created", "data": dict(movie)}, status_code=201
+        content={"message": "Movie created"},
+        status_code=status.HTTP_201_CREATED,
     )
 
 
@@ -117,10 +120,15 @@ def update_movie(
     )
 
 
-@app.delete("/movies/{id}", tags=["Movies"], response_model=dict)
-def delete_movie(id: int) -> dict:
+@app.delete(
+    "/movies/{id}",
+    tags=["Movies"],
+    response_model=None,
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_movie(id: int) -> None:
     movie = next((movie for movie in movies if movie["id"] == id), None)
     if not movie:
         return JSONResponse(content={"error": "Movie not found"}, status_code=404)
     movies.remove(movie)
-    return JSONResponse(content={"message": "Movie deleted"})
+    return JSONResponse(content=None, status_code=204)
