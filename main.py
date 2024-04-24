@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.security import HTTPBearer
 from pydantic import BaseModel, Field
@@ -120,7 +121,9 @@ def message():
     dependencies=[Depends(JWTBearer())],
 )
 def get_movies() -> List[Movie]:
-    return JSONResponse(content={"data": movies})
+    db = Session()
+    result = db.query(MovieModel).all()
+    return JSONResponse(content={"data": jsonable_encoder(result)})
 
 
 @app.get(
@@ -130,12 +133,13 @@ def get_movies() -> List[Movie]:
     dependencies=[Depends(JWTBearer())],
 )
 def get_movie(id: int = Path(ge=1)) -> Movie:
-    movie = next((movie for movie in movies if movie["id"] == id), None)
+    db = Session()
+    movie = db.query(MovieModel).filter(MovieModel.id == id).first()
     if not movie:
         return JSONResponse(
             content={"error": "Movie not found"}, status_code=status.HTTP_404_NOT_FOUND
         )
-    return JSONResponse(content={"data": movie})
+    return JSONResponse(content={"data": jsonable_encoder(movie)})
 
 
 @app.get(
@@ -145,8 +149,9 @@ def get_movie(id: int = Path(ge=1)) -> Movie:
     dependencies=[Depends(JWTBearer())],
 )
 def get_movies_by_category(category: str = Query(min_length=3)) -> List[Movie]:
-    filtered = next([movie for movie in movies if movie["category"] == category], None)
-    return JSONResponse(content={"data": filtered})
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.category == category).all()
+    return JSONResponse(content={"data": jsonable_encoder(result)})
 
 
 @app.post(
