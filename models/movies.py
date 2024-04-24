@@ -6,10 +6,8 @@ from config.database import Base
 class Movie(Base):
     __tablename__ = "movies"
 
-    id = Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     title = Column(String)
-    overview = Column(String, nullable=True)
-    year = Column(Integer)
-    director = Column(String)
     category = Column(String)
+    year = Column(Integer)
     rating = Column(Float)

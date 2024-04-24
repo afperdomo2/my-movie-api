@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 
 from config.database import Base, Session, engine
 from jwt_manager import create_token, validate_token
-from models.movies import Movie
+from models.movies import Movie as MovieModel
 
 app = FastAPI()
 app.title = "My Movie API"
@@ -26,13 +26,21 @@ class JWTBearer(HTTPBearer):
             )
 
 
-class User(BaseModel):
+class UserLogin(BaseModel):
     email: str
     password: str
 
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "email": "admin@gmail.com",
+                "password": "123",
+            }
+        }
+
 
 class Movie(BaseModel):
-    id: Optional[int]
+    id: Optional[int] = None
     title: str = Field(min_length=3)
     category: str = Field(min_length=3)
     year: int = Field(ge=1900)
@@ -41,7 +49,6 @@ class Movie(BaseModel):
     class Config:
         json_schema_extra = {
             "example": {
-                "id": 1,
                 "title": "The Shawshank Redemption",
                 "category": "Drama",
                 "year": 1994,
@@ -91,7 +98,7 @@ movies = [
 
 
 @app.post("/login", tags=["Auth"], response_model=dict)
-def login(user: User) -> dict:
+def login(user: UserLogin) -> dict:
     if user.email != "admin@gmail.com" or user.password != "123":
         return JSONResponse(
             content={"error": "Invalid credentials"},
@@ -150,7 +157,10 @@ def get_movies_by_category(category: str = Query(min_length=3)) -> List[Movie]:
     dependencies=[Depends(JWTBearer())],
 )
 def create_movie(movie: Movie) -> dict:
-    movies.append(movie.model_dump())
+    db = Session()
+    new_movie = MovieModel(**movie.model_dump())
+    db.add(new_movie)
+    db.commit()
     return JSONResponse(
         content={"message": "Movie created"},
         status_code=status.HTTP_201_CREATED,
