@@ -3,7 +3,7 @@ from sqlalchemy import Column, Float, Integer, String
 from config.database import Base
 
 
-class Movie(Base):
+class MovieModel(Base):
     __tablename__ = "movies"
 
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)

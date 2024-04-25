@@ -2,9 +2,9 @@ from fastapi import FastAPI
 
 from config.database import Base, engine
 from middlewares.error_handler import ErrorHandler
-from routes.auth import auth_routes
-from routes.home import home_routes
-from routes.movies import movies_routes
+from routes.auth_routes import auth_routes
+from routes.home_routes import home_routes
+from routes.movies_routes import movies_routes
 
 app = FastAPI()
 app.title = "My Movie API"

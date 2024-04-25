@@ -6,8 +6,8 @@ from fastapi.responses import JSONResponse
 
 from config.database import Session
 from middlewares.jwt_bearer import JWTBearer
-from models.movies import Movie as MovieModel
 from schemas.movie import Movie
+from services.movie_service import MovieService
 
 movies_routes = APIRouter()
 
@@ -20,7 +20,7 @@ movies_routes = APIRouter()
 )
 def get_movies() -> List[Movie]:
     db = Session()
-    result = db.query(MovieModel).all()
+    result = MovieService(db).get_movies()
     return JSONResponse(content={"data": jsonable_encoder(result)})
 
 
@@ -32,7 +32,7 @@ def get_movies() -> List[Movie]:
 )
 def get_movie(id: int = Path(ge=1)) -> Movie:
     db = Session()
-    movie = db.query(MovieModel).filter(MovieModel.id == id).first()
+    movie = MovieService(db).get_movie(id)
     if not movie:
         return JSONResponse(
             content={"message": "Movie not found"},
@@ -49,7 +49,7 @@ def get_movie(id: int = Path(ge=1)) -> Movie:
 )
 def get_movies_by_category(category: str = Query(min_length=3)) -> List[Movie]:
     db = Session()
-    result = db.query(MovieModel).filter(MovieModel.category == category).all()
+    result = MovieService(db).get_movie_by_category(category)
     return JSONResponse(content={"data": jsonable_encoder(result)})
 
 
@@ -62,9 +62,7 @@ def get_movies_by_category(category: str = Query(min_length=3)) -> List[Movie]:
 )
 def create_movie(movie: Movie) -> dict:
     db = Session()
-    new_movie = MovieModel(**movie.model_dump())
-    db.add(new_movie)
-    db.commit()
+    MovieService(db).create_movie(movie)
     return JSONResponse(
         content={"message": "Movie created"},
         status_code=status.HTTP_201_CREATED,
@@ -77,22 +75,15 @@ def create_movie(movie: Movie) -> dict:
     response_model=dict,
     dependencies=[Depends(JWTBearer())],
 )
-def update_movie(
-    id: int,
-    movie_update: Movie,
-) -> dict:
+def update_movie(id: int, data: Movie) -> dict:
     db = Session()
-    result = db.query(MovieModel).filter(MovieModel.id == id).first()
-    if not result:
+    movie = MovieService(db).get_movie(id)
+    if not movie:
         return JSONResponse(
             content={"message": "Movie not found"},
             status_code=status.HTTP_404_NOT_FOUND,
         )
-    result.title = movie_update.title
-    result.category = movie_update.category
-    result.year = movie_update.year
-    result.rating = movie_update.rating
-    db.commit()
+    MovieService(db).update_movie(id, data)
     return JSONResponse(content={"message": "Movie updated"})
 
 
@@ -105,12 +96,11 @@ def update_movie(
 )
 def delete_movie(id: int) -> None:
     db = Session()
-    result = db.query(MovieModel).filter(MovieModel.id == id).first()
-    if not result:
+    movie = MovieService(db).get_movie(id)
+    if not movie:
         return JSONResponse(
             content={"message": "Movie not found"},
             status_code=status.HTTP_404_NOT_FOUND,
         )
-    db.delete(result)
-    db.commit()
-    return JSONResponse(content=None, status_code=status.HTTP_204_NO_CONTENT)
+    MovieService(db).delete_movie(id)
+    return status.HTTP_204_NO_CONTENT
