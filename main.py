@@ -182,18 +182,18 @@ def update_movie(
     id: int,
     movie_update: Movie,
 ) -> dict:
-    movie_dict = next((movie for movie in movies if movie["id"] == id), None)
-    if not movie_dict:
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.id == id).first()
+    if not result:
         return JSONResponse(
             content={"error": "Movie not found"}, status_code=status.HTTP_404_NOT_FOUND
         )
-    movie_dict["title"] = movie_update.title
-    movie_dict["category"] = movie_update.category
-    movie_dict["year"] = movie_update.year
-    movie_dict["rating"] = movie_update.rating
-    return JSONResponse(
-        content={"message": "Movie updated", "data": movie_dict},
-    )
+    result.title = movie_update.title
+    result.category = movie_update.category
+    result.year = movie_update.year
+    result.rating = movie_update.rating
+    db.commit()
+    return JSONResponse(content={"message": "Movie updated"})
 
 
 @app.delete(
@@ -204,10 +204,12 @@ def update_movie(
     dependencies=[Depends(JWTBearer())],
 )
 def delete_movie(id: int) -> None:
-    movie = next((movie for movie in movies if movie["id"] == id), None)
-    if not movie:
+    db = Session()
+    result = db.query(MovieModel).filter(MovieModel.id == id).first()
+    if not result:
         return JSONResponse(
             content={"error": "Movie not found"}, status_code=status.HTTP_404_NOT_FOUND
         )
-    movies.remove(movie)
+    db.delete(result)
+    db.commit()
     return JSONResponse(content=None, status_code=status.HTTP_204_NO_CONTENT)
