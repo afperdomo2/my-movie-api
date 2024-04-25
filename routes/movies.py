@@ -9,10 +9,10 @@ from middlewares.jwt_bearer import JWTBearer
 from models.movies import Movie as MovieModel
 from schemas.movie import Movie
 
-movies_router = APIRouter()
+movies_routes = APIRouter()
 
 
-@movies_router.get(
+@movies_routes.get(
     "/movies",
     tags=["Movies"],
     response_model=List[Movie],
@@ -24,7 +24,7 @@ def get_movies() -> List[Movie]:
     return JSONResponse(content={"data": jsonable_encoder(result)})
 
 
-@movies_router.get(
+@movies_routes.get(
     "/movies/{id}",
     tags=["Movies"],
     response_model=Movie,
@@ -41,7 +41,7 @@ def get_movie(id: int = Path(ge=1)) -> Movie:
     return JSONResponse(content={"data": jsonable_encoder(movie)})
 
 
-@movies_router.get(
+@movies_routes.get(
     "/movies/",
     tags=["Movies"],
     response_model=List[Movie],
@@ -53,7 +53,7 @@ def get_movies_by_category(category: str = Query(min_length=3)) -> List[Movie]:
     return JSONResponse(content={"data": jsonable_encoder(result)})
 
 
-@movies_router.post(
+@movies_routes.post(
     "/movies",
     tags=["Movies"],
     response_model=dict,
@@ -71,7 +71,7 @@ def create_movie(movie: Movie) -> dict:
     )
 
 
-@movies_router.put(
+@movies_routes.put(
     "/movies/{id}",
     tags=["Movies"],
     response_model=dict,
@@ -96,7 +96,7 @@ def update_movie(
     return JSONResponse(content={"message": "Movie updated"})
 
 
-@movies_router.delete(
+@movies_routes.delete(
     "/movies/{id}",
     tags=["Movies"],
     response_model=None,

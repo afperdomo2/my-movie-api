@@ -4,10 +4,10 @@ from fastapi.responses import JSONResponse
 from jwt_manager import create_token
 from schemas.user_login import UserLogin
 
-auth_router = APIRouter()
+auth_routes = APIRouter()
 
 
-@auth_router.post("/login", tags=["Auth"], response_model=dict)
+@auth_routes.post("/login", tags=["Auth"], response_model=dict)
 def login(user: UserLogin) -> dict:
     if user.email != "admin@gmail.com" or user.password != "123":
         return JSONResponse(
