@@ -1,30 +1,23 @@
 from typing import List, Optional
 
-from fastapi import Depends, FastAPI, HTTPException, Path, Query, Request, status
+from fastapi import Depends, FastAPI, Path, Query, status
 from fastapi.encoders import jsonable_encoder
 from fastapi.responses import HTMLResponse, JSONResponse
-from fastapi.security import HTTPBearer
 from pydantic import BaseModel, Field
 
 from config.database import Base, Session, engine
-from jwt_manager import create_token, validate_token
+from jwt_manager import create_token
+from middlewares.error_handler import ErrorHandler
+from middlewares.jwt_bearer import JWTBearer
 from models.movies import Movie as MovieModel
 
 app = FastAPI()
 app.title = "My Movie API"
 app.version = "0.0.1"
+app.add_middleware(ErrorHandler)
+
 
 Base.metadata.create_all(bind=engine)
-
-
-class JWTBearer(HTTPBearer):
-    async def __call__(self, request: Request):
-        auth = await super().__call__(request)
-        data = validate_token(auth.credentials)
-        if data["sub"] != "admin@gmail.com":
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Unauthorized"
-            )
 
 
 class UserLogin(BaseModel):
@@ -56,46 +49,6 @@ class Movie(BaseModel):
                 "rating": 9.3,
             }
         }
-
-
-movies = [
-    {
-        "id": 1,
-        "title": "The Shawshank Redemption",
-        "category": "Drama",
-        "year": 1994,
-        "rating": 9.3,
-    },
-    {
-        "id": 2,
-        "title": "The Godfather",
-        "category": "Crime",
-        "year": 1972,
-        "rating": 9.2,
-    },
-    {
-        "id": 3,
-        "title": "The Dark Knight",
-        "category": "Action",
-        "year": 2008,
-        "rating": 9.0,
-    },
-    {
-        "id": 4,
-        "title": "Pulp Fiction",
-        "category": "Crime",
-        "year": 1994,
-        "rating": 8.9,
-    },
-    {
-        "id": 5,
-        "title": "Forrest Gump",
-        "category": "Drama",
-        "year": 1994,
-        "rating": 8.8,
-    },
-    {"id": 6, "title": "Inception", "category": "Action", "year": 2010, "rating": 8.7},
-]
 
 
 @app.post("/login", tags=["Auth"], response_model=dict)
@@ -137,7 +90,8 @@ def get_movie(id: int = Path(ge=1)) -> Movie:
     movie = db.query(MovieModel).filter(MovieModel.id == id).first()
     if not movie:
         return JSONResponse(
-            content={"error": "Movie not found"}, status_code=status.HTTP_404_NOT_FOUND
+            content={"message": "Movie not found"},
+            status_code=status.HTTP_404_NOT_FOUND,
         )
     return JSONResponse(content={"data": jsonable_encoder(movie)})
 
@@ -186,7 +140,8 @@ def update_movie(
     result = db.query(MovieModel).filter(MovieModel.id == id).first()
     if not result:
         return JSONResponse(
-            content={"error": "Movie not found"}, status_code=status.HTTP_404_NOT_FOUND
+            content={"message": "Movie not found"},
+            status_code=status.HTTP_404_NOT_FOUND,
         )
     result.title = movie_update.title
     result.category = movie_update.category
@@ -208,7 +163,8 @@ def delete_movie(id: int) -> None:
     result = db.query(MovieModel).filter(MovieModel.id == id).first()
     if not result:
         return JSONResponse(
-            content={"error": "Movie not found"}, status_code=status.HTTP_404_NOT_FOUND
+            content={"message": "Movie not found"},
+            status_code=status.HTTP_404_NOT_FOUND,
         )
     db.delete(result)
     db.commit()
