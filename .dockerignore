@@ -1,0 +1,30 @@
+# Ignorar el directorio del entorno virtual
+venv
+
+# Ignorar los archivos de caché de Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+
+# Ignorar los archivos de registro
+*.log
+
+# Ignorar los archivos de configuración local
+*.ini
+
+# Ignorar los archivos de prueba
+tests/
+*.test
+*.pytest_cache
+
+# Ignorar los archivos de Git
+.git
+.gitignore
+
+# Ignorar el archivo README
+README.md
+
+# Ignorar la base de datos SQLite
+database.sqlite

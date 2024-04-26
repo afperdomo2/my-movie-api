@@ -1,4 +1,6 @@
-### Configuración
+# my-movie-api
+
+## 🪛 1. Configuración
 
 ```sh
 # Crear un entorno virtual en el directorio actual
@@ -20,6 +22,8 @@ pip freeze > requirements.txt
 
 ### Proyecto
 
+Se debe de ejecutar los scripts dentro del entorno del proyecto
+
 `--reload`: Esto le dice a Uvicorn que reinicie el servidor cada vez que detecte un cambio en los archivos de origen.
 
 `--port 3500`: Esto le dice a Uvicorn que escuche en el puerto 3500 en lugar del puerto predeterminado, que es 8000.
@@ -32,3 +36,21 @@ uvicorn main:app --reload
 uvicorn main:app --reload --port 3500
 uvicorn main:app --reload --port 3500 --host 0.0.0.0
 ```
+
+## 🐳 2. Deploy
+
+Ejecutar el proyecto con Docker y docker-compose
+
+```sh
+docker-compose up --build -d
+```
+
+## 📚 3. Documentación - swagger
+
+Modificar el host y el puerto según la configuración del proyecto
+
+📺Local:
+[http://localhost:3500/docs](http://localhost:3500/docs)
+
+🐳Docker:
+[http://localhost:3600/docs](http://localhost:3600/docs)
