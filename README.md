@@ -13,6 +13,9 @@ deactivate
 # Instalar módulos en el entorno virtual
 pip install fastapi
 pip install uvicorn
+
+# Muestra una lista de todas las bibliotecas de Python instaladas en el entorno actual
+pip freeze > requirements.txt
 ```
 
 ### Proyecto
